@@ -1,0 +1,341 @@
+---
+title: "EDA_PROJECT FINAL"
+author: "19MIS1018  _ B DEVI PRASAD"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+#Load the necessary libraries for data analysis and visualization:
+library(tidyverse)   # for data manipulation and visualization
+library(ggcorrplot)  # for visualizing correlation matrix
+
+```
+
+```{r}
+#Load the dataset into R using the read.csv() function:
+df <- read.csv("Testing.csv")
+df1 <- read.csv("Training.csv")
+
+
+```
+
+```{r}
+#Check the structure of the dataset using str(df):
+head(df,5)
+head(df1,5)
+```
+
+```{r}
+#Check the summary statistics of the dataset using summary(df):
+#This should display the minimum, maximum, median, and quartiles of each variable in the dataset.
+summary(df)
+summary(df1)
+
+```
+
+```{r}
+#Visualize the distribution of each variable using a histogram:
+#This should display a histogram of the "age" variable in the dataset.
+ggplot(df, aes(x=skin_rash)) +
+  geom_histogram(binwidth = 5, fill="blue", alpha=0.5) +
+  labs(title=" Skin Rash disease", x="Skin Rash", y="Frequency")
+
+
+```
+
+```{r}
+#Visualize the correlation between variables using a correlation matrix:
+cor <- cor(df[,1:14])
+ggcorrplot(cor, type="lower", lab=TRUE, lab_size=2.5)
+
+```
+```{r}
+#Explore the relationship between two variables using a scatterplot:
+ggplot(df, aes(x=itching, y=skin_rash)) +
+  geom_point(color="blue", alpha=0.5) +
+  labs(title="itching vs skin_rash", x="itching", y="Skin_rash")
+
+```
+
+
+```{r Naive Bayes}
+# Load the required libraries
+library(e1071)
+library(caret)
+
+# Load the training and testing data sets
+train_data <- read.csv("training.csv")
+test_data <- read.csv("testing.csv")
+
+# Preprocess the data sets
+set.seed(123)
+train_index <- createDataPartition(train_data$prognosis, p = 0.8, list = FALSE)
+train <- train_data[train_index, ]
+valid <- train_data[-train_index, ]
+
+#We can now train the Naive Bayes algorithm on the training set using the naiveBayes() function from the e1071 package.
+nb_model <- naiveBayes(prognosis ~ ., data = train)
+
+#We can then use the trained model to predict the outcomes of the validation set using the predict() function.
+pred <- predict(nb_model, newdata = valid[,-133])
+
+#We can evaluate the accuracy of the model by comparing the predicted outcomes to the actual outcomes in the validation set.
+accuracy <- mean(pred == valid$prognosis)
+print(paste0("Accuracy: ", accuracy))
+
+#Finally, we can use the trained model to predict the outcomes of the testing set and evaluate the accuracy on this set as well.
+test_pred <- predict(nb_model, newdata = test_data[,-133])
+test_accuracy <- mean(test_pred == test_data$prognosis)
+print(paste0("Test Accuracy: ", test_accuracy))
+
+
+```
+
+```{r K-Nearest Neighbors}
+# Load the required libraries
+library(class)
+
+# Load the training and testing datasets
+train_data <- read.csv("training.csv")
+test_data <- read.csv("testing.csv")
+
+# Split the datasets into input features (symptoms) and output (prognosis)
+train_x <- train_data[, 1:132]
+train_y <- train_data[, 133]
+test_x <- test_data[, 1:132]
+test_y <- test_data[, 133]
+
+# Train the K-Nearest Neighbors model
+knn_model <- knn(train_x, test_x, train_y, k=5)
+
+# Evaluate the model accuracy
+accuracy <- mean(knn_model == test_y)
+print(paste0("Accuracy: ", round(accuracy * 100, 2), "%"))
+
+
+```
+
+
+
+```{r DECISION TREE}
+#Decision Tree
+# Load libraries
+library(rpart)
+library(rpart.plot)
+
+# Load training data
+training_data <- read.csv("training.csv", header = TRUE)
+
+# Load testing data
+testing_data <- read.csv("testing.csv", header = TRUE)
+
+# Train the decision tree model
+decision_tree_model <- rpart(prognosis ~ ., data = training_data, method = "class")
+
+# Visualize the decision tree model
+rpart.plot(decision_tree_model)
+
+# Make predictions on testing data using the decision tree model
+predictions <- predict(decision_tree_model, testing_data, type = "class")
+
+# Evaluate the accuracy of the model
+accuracy <- sum(predictions == testing_data$prognosis) / nrow(testing_data)
+print(paste("Accuracy:", accuracy))
+
+```
+
+```{r RANDOM FOREST}
+#RANDOM FOREST
+#First, you need to load the required libraries for machine learning in R, such as caret, randomForest, and e1071:
+library(caret)
+library(randomForest)
+library(e1071)
+library(randomForest)
+
+# Load the training and testing data
+training_data <- read.csv("training.csv")
+testing_data <- read.csv("testing.csv")
+
+# Extract the symptom columns and the prognosis column
+symptom_columns <- names(training_data)[1:132]
+prognosis_column <- names(training_data)[133]
+
+# Train the random forest model
+model <- randomForest(as.factor(training_data[, prognosis_column]) ~ ., data = training_data[, symptom_columns], ntree = 100, importance = TRUE)
+
+# Use the trained model to predict on the testing data
+predictions <- predict(model, newdata = testing_data[, symptom_columns])
+
+# Evaluate Model Performance
+confusion_matrix <- table(predictions, testing_data$prognosis)
+accuracy <- sum(diag(confusion_matrix))/sum(confusion_matrix)
+precision <- diag(confusion_matrix)/rowSums(confusion_matrix)
+recall <- diag(confusion_matrix)/colSums(confusion_matrix)
+
+# Print Results
+print(paste0("Accuracy: ", round(accuracy, 4)))
+print(paste0("Precision: ", round(precision, 4)))
+print(paste0("Recall: ", round(recall, 4)))
+
+
+```
+
+
+```{r SUPPORT VECTOR MEACHINE}
+#SUPPORT VECTOR MEACHINE
+# Load required libraries
+library(e1071) # for SVM model
+library(caret) # for metrics
+
+# Load training data
+train_data <- read.csv("training.csv")
+
+# Drop any rows with missing values
+train_data <- train_data[complete.cases(train_data),]
+
+# Extract features and labels from training data
+train_X <- train_data[,1:132]
+train_Y <- as.factor(train_data[,133]) # Convert dependent variable to factor
+
+# Fit SVM model
+svm_model <- svm(train_X, train_Y, kernel = "linear")
+
+# Load testing data
+test_data <- read.csv("testing.csv")
+
+# Drop any rows with missing values
+test_data <- test_data[complete.cases(test_data),]
+
+# Extract features and labels from testing data
+test_X <- test_data[,1:132]
+test_Y <- as.factor(test_data[,133]) # Convert dependent variable to factor
+
+# Make predictions using the trained SVM model
+predictions <- predict(svm_model, test_X)
+
+# Calculate accuracy and precision of predictions
+accuracy <- confusionMatrix(predictions, test_Y)$overall["Accuracy"]
+precision <- confusionMatrix(predictions, test_Y)$byClass["Precision"]
+
+# Print accuracy and precision
+cat("Accuracy: ", accuracy, "\n")
+cat("Precision: ", precision, "\n")
+
+# Plot confusion matrix
+confusionMatrix(predictions, test_Y)
+
+
+```
+
+```{r LOGISTIC REGRESSION}
+# Load the required libraries
+library(readr)
+library(caret)
+library(glmnet)
+
+# Load training and testing datasets
+train_data <- read.csv("training.csv")
+test_data <- read.csv("testing.csv")
+
+# Split the data into predictors (symptoms) and target (prognosis)
+train_predictors <- train_data[,1:132]
+train_target <- train_data[,133]
+test_predictors <- test_data[,1:132]
+test_target <- test_data[,133]
+
+# Train the logistic regression model
+model <- glmnet(train_predictors, train_target, family="multinomial")
+
+# Predict the target variable for testing data
+test_predictions <- predict(model, newx = as.matrix(test_predictors), type="response")
+
+# Convert predicted probabilities to binary predictions
+test_predictions_binary <- ifelse(test_predictions > 0.5, 1, 0)
+
+# Calculate the accuracy of the model on testing data
+accuracy <- sum(test_predictions_binary == test_target) / length(test_target)
+
+# Print the accuracy of the model on testing data
+print(paste("Accuracy:", round(accuracy, 2)))
+
+```
+
+```{r}
+library(randomForest)
+library(e1071)
+library(caret)
+
+# Load the dataset
+training_data <- read.csv("Training.csv")
+testing_data <- read.csv("Testing.csv")
+
+# Preprocessing the data
+training_data$prognosis <- as.factor(training_data$prognosis)
+testing_data$prognosis <- as.factor(testing_data$prognosis)
+
+X_train <- training_data[, -1]
+Y_train <- training_data[, 1]
+
+X_test <- testing_data[, -1]
+Y_test <- testing_data[, 1]
+
+# Training the random forest model
+rf_model <- randomForest(prognosis ~ ., data = training_data, ntree = 500, importance = TRUE)
+final_rf_model <- rf_model$forest[[500]]
+
+# Training the Naive Bayes model
+nb_model <- naiveBayes(X_train, Y_train)
+final_nb_model <- nb_model$tables[[2]]
+
+# Training the SVM model
+svm_model <- svm(prognosis ~ ., data = training_data)
+final_svm_model <- svm_model$SV
+
+# Encoding the symptoms
+symptoms <- colnames(X_train)
+symptom_index <- sapply(strsplit(symptoms, "_"), function(x) {str_to_title(paste(x, collapse = " "))})
+symptom_index <- as.data.frame(symptom_index)
+symptom_index$ID <- seq_along(symptoms)
+symptom_index <- symptom_index[, c("ID", "symptoms")]
+rownames(symptom_index) <- symptom_index$symptoms
+symptom_index <- symptom_index[, -1]
+
+# Defining the function
+# Input: string containing symptoms separated by commas
+# Output: Generated predictions by models
+predictDisease <- function(symptoms) {
+  symptoms <- strsplit(symptoms, ",")[[1]]
+  
+  # creating input data for the models
+  input_data <- data.frame(matrix(ncol = length(symptom_index), nrow = 1))
+  colnames(input_data) <- rownames(symptom_index)
+  for (symptom in symptoms) {
+    index <- which(rownames(symptom_index) == symptom)
+    input_data[, index] <- 1
+  }
+  
+  # generating individual outputs
+  rf_prediction <- levels(Y_train)[predict(final_rf_model, input_data)]
+  nb_prediction <- levels(Y_train)[predict(final_nb_model, input_data)]
+  svm_prediction <- levels(Y_train)[predict(final_svm_model, input_data)]
+  
+  # making final prediction by taking mode of all predictions
+  final_prediction <- mode(c(rf_prediction, nb_prediction, svm_prediction))$mode
+  
+  predictions <- list(
+    rf_model_prediction = rf_prediction,
+    naive_bayes_prediction = nb_prediction,
+    svm_model_prediction = svm_prediction,
+    final_prediction = final_prediction
+  )
+  
+  return(predictions)
+}
+
+# Testing the function
+predictDisease("Itching,Skin Rash,Nodal Skin Eruptions")
+
+```
+
+
